@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import pymysql
 
 # 각 user가 평가한 영화의 link를 얻는 함수
 def get_movie_link(url):
@@ -67,15 +68,16 @@ def get_user_link(url):
 def do_crawl(url):
 
     url_list = get_user_link(url)
-
+    # DB 연결
+    db = pymysql.connect(host='localhost', user = 'root', password = '1234', database = 'movie_review')
+    cursor = db.cursor()
 
     # 평점을 10개 이하로 준 유저는 제외한다
     if len(url_list) >= 2:
 
         for url in url_list:
-
             genre_list_ = genre_list(url)
-            print(genre_list_)
+            # print(genre_list_)
             res = requests.get(url)
             content = res.text
             soup = BeautifulSoup(content, 'html5lib')
@@ -84,7 +86,7 @@ def do_crawl(url):
             title = soup.find_all('a', class_='movie color_b') # a 태그
             # print(title[0].get_text())
             score = soup.find_all('div', class_='list_netizen_score')
-            print(score[0].select('em')[0].contents[0])
+            # print(score[0].select('em')[0].contents[0])
 
             user_id_list = []
             for user_id in user_id:
@@ -100,5 +102,22 @@ def do_crawl(url):
             score_list = []
             for score in score:
                 score_list.append(score.select('em')[0].contents[0])
-            print(score_list)
+            # print(score_list)
+
+            for num in range(len(title_list)):
+                # print(score_list[num], '\t', genre_list_[num], '\t', title_list[num])
+                query = """insert into raw_file (user, title, genre, score) values ('{}', '{}', '{}', '{}')""".format(user_id_list[num], title_list[num], genre_list_[num], score_list[num])
+                try:
+                    db.commit()
+                    cursor.execute(query)
+                except Exception as e:
+                    print(str(e))
+                    db.rollback()
+                    
+            
+    # print("done")            
+    db.close()
+            # for num in range(len(user_id_list)):
+            #     user = user_id_list[num]
+                # print(user)
             
