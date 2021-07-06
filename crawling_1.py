@@ -102,4 +102,3 @@ def do_crawl(url):
                 score_list.append(score.select('em')[0].contents[0])
             print(score_list)
             
-            
